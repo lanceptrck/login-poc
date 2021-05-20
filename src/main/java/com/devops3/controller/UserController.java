@@ -1,5 +1,6 @@
 package com.devops3.controller;
 
+import com.devops3.dto.Data;
 import com.devops3.dto.EntityDTO;
 import com.devops3.dto.UserDTO;
 import com.devops3.exception.ExistingUserException;
@@ -16,6 +17,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 
 @RestController
@@ -35,13 +37,16 @@ public class UserController {
             if (foundUsers.isEmpty()) {
                 newUser = userRepository.save(newUser);
 
-                UserDTO data = UserDTO.UserDTOBuilder.anUserDTO().withId(newUser.getId()).withLoggedIn(false).withUsername(newUser.getUsername()).build();
+                UserDTO userDTO = UserDTO.UserDTOBuilder.anUserDTO().withId(newUser.getId()).withLoggedIn(false).withUsername(newUser.getUsername()).build();
+                Data d = Data.DataBuilder.aData().build();
+                d.addUser(userDTO);
+
                 EntityDTO<UserDTO> dto = new EntityDTO<>();
                 dto.setStatus(Status.SUCCESS);
-                dto.setData(data);
+                dto.addData(d);
                 dto.setResponseCode(HttpStatus.CREATED.value());
 
-                logger.info(data.toString());
+                logger.info(userDTO.toString());
 
                 return new ResponseEntity<>(dto, HttpStatus.CREATED);
 
@@ -66,15 +71,19 @@ public class UserController {
             loggedInUser.setLastLogin(LocalDateTime.now());
             userRepository.save(loggedInUser);
 
-            UserDTO data = UserDTO.UserDTOBuilder.anUserDTO()
+            UserDTO userDTO = UserDTO.UserDTOBuilder.anUserDTO()
                     .withUsername(loggedInUser.getUsername())
                     .withId(loggedInUser.getId())
                     .withLoggedIn(loggedInUser.isLoggedIn())
                     .withLastLogin(loggedInUser.getLastLogin()).build();
 
+            Data d = Data.DataBuilder.aData().build();
+            d.addUser(userDTO);
+            //d.addUser(UserDTO.UserDTOBuilder.anUserDTO().withUsername("admin").withId(9999).withLoggedIn(false).build());
+
             EntityDTO<UserDTO> dto = new EntityDTO<>();
             dto.setStatus(Status.SUCCESS);
-            dto.setData(data);
+            dto.addData(d);
             dto.setResponseCode(HttpStatus.OK.value());
 
             return new ResponseEntity<>(dto, HttpStatus.OK);

@@ -2,10 +2,6 @@ package com.devops3.dto;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 
-import javax.persistence.GeneratedValue;
-import javax.persistence.Id;
-import javax.validation.constraints.NotBlank;
-import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 public class UserDTO {
