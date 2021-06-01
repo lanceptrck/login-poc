@@ -2,13 +2,20 @@ package com.devops3.controller;
 
 import com.devops3.dto.Data;
 import com.devops3.dto.EntityDTO;
+import com.devops3.dto.ErrorDTO;
 import com.devops3.dto.UserDTO;
+import com.devops3.exception.EmptyFieldException;
 import com.devops3.exception.ExistingUserException;
 import com.devops3.exception.AccessException;
 import com.devops3.exception.UserNotFoundException;
 import com.devops3.model.Status;
 import com.devops3.model.User;
 import com.devops3.service.UserRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +28,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @RestController
+@RequestMapping("users")
 public class UserController {
 
     @Autowired
@@ -28,8 +36,20 @@ public class UserController {
 
     private final Logger logger = LoggerFactory.getLogger(UserController.class);
 
-    @PostMapping("/users/register")
-    public ResponseEntity<EntityDTO> registerUser(@RequestBody User newUser) {
+    @Operation(summary = "Register new user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "New user registered!",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = EntityDTO.class))}),
+            @ApiResponse(responseCode = "409", description = "Account already exists",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorDTO.class))}),
+            @ApiResponse(responseCode = "204", description = "Passed an empty response body",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorDTO.class))})
+    })
+    @PostMapping("register")
+    public ResponseEntity<EntityDTO> registerUser(@RequestBody(required = true) User newUser) {
 
         if (newUser.getUsername().length() > 0 && newUser.getPassword().length() > 0) {
             List<User> foundUsers = userRepository.findByUsername(newUser.getUsername());
@@ -51,13 +71,25 @@ public class UserController {
                 return new ResponseEntity<>(dto, HttpStatus.CREATED);
 
             } else throw new ExistingUserException("User is already registered.");
-        } else throw new RuntimeException("Username & password should not be empty");
+        } else throw new EmptyFieldException("Username & password should not be empty");
 
 
     }
 
-    @PostMapping("/users/login")
-    public ResponseEntity<EntityDTO> loginUser(@RequestBody User user) {
+    @Operation(summary = "Login user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "User logged in",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = EntityDTO.class))}),
+            @ApiResponse(responseCode = "404", description = "User not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorDTO.class))}),
+            @ApiResponse(responseCode = "406", description = "User already logged in",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorDTO.class))})
+    })
+    @PostMapping("login")
+    public ResponseEntity<EntityDTO> loginUser(@RequestBody(required = true) User user) {
 
         List<User> foundUsers = userRepository.findByUsername(user.getUsername());
 
@@ -92,7 +124,19 @@ public class UserController {
         throw new UserNotFoundException("User not found!");
     }
 
-    @PostMapping("/users/logout")
+    @Operation(summary = "Logout user")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Logged user out succesfully",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = EntityDTO.class))}),
+            @ApiResponse(responseCode = "404", description = "User not found",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorDTO.class))}),
+            @ApiResponse(responseCode = "406", description = "Cannot logout user, because he/she is not logged in",
+                    content = {@Content(mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorDTO.class))})
+    })
+    @PostMapping("logout")
     public ResponseEntity<EntityDTO> logUserOut(@RequestBody User user) {
 
         List<User> foundUsers = userRepository.findByUsername(user.getUsername());
@@ -115,9 +159,4 @@ public class UserController {
         throw new UserNotFoundException("User not found exception");
     }
 
-    @DeleteMapping("/users/all")
-    public Status deleteUsers() {
-        userRepository.deleteAll();
-        return Status.SUCCESS;
-    }
 }
